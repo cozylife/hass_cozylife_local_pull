@@ -1,10 +1,10 @@
 # CozyLife & Home Assistant 
 
-CozyLife Assistant integration is developed for controlling CozyLife devices using Local net, officially 
+CozyLife Assistant integration is developed for controlling CozyLife devices using local net, officially 
 maintained by the CozyLife Team.
 
 
-##Supported Device Types
+## Supported Device Types
 
 - RGBCW Light
 - CW Light
