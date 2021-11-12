@@ -14,7 +14,7 @@ maintained by the CozyLife Team.
 ## Install
 
 * A home assistant environment that can access the external network
-* clone the warehouse to the custom_components directory
+* clone the repo to the custom_components directory
 * configuration.yaml
 ```
 hass_cozylife_local_pull:
