@@ -3,6 +3,7 @@ import time
 from .utils import get_sn
 import logging
 
+
 _LOGGER = logging.getLogger(__name__)
 
 """
