@@ -83,6 +83,11 @@ class CozyLifeSwitch(SwitchEntity):
         self._refresh_state()
         return self._attr_is_on
     
+    @property
+    def unique_id(self) -> str | None:
+        """Return a unique ID."""
+        return self._unique_id
+    
     def turn_on(self, **kwargs: Any) -> None:
         """Turn the entity on."""
         self._attr_is_on = True

@@ -155,6 +155,11 @@ class CozyLifeLight(LightEntity):
         """Return the CT color value in mireds."""
         return self._attr_color_temp
     
+    @property
+    def unique_id(self) -> str | None:
+        """Return a unique ID."""
+        return self._unique_id
+
     def turn_on(self, **kwargs: Any) -> None:
         """Turn the entity on."""
         self._attr_is_on = True
