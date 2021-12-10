@@ -24,3 +24,9 @@ hass_cozylife_local_pull:
 ### Feedback
 * Please submit an issue
 * Send an email with the subject of hass support to info@cozylife.app
+
+
+### TODO
+- Compatible with python3.9
+- Sending broadcasts regularly has reached the ability to discover devices at any time
+- TCP reconnect
