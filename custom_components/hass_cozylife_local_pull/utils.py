@@ -40,7 +40,7 @@ def get_pid_list(lang='en') -> list:
         _LOGGER.info('get_pid_list.result is none')
         return []
     try:
-        pid_list = json.loads(res.content, encoding='utf-8')
+        pid_list = json.loads(res.content)
     except:
         _LOGGER.info('get_pid_list.result is not json')
         return []
