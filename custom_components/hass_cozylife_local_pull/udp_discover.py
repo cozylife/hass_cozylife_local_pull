@@ -35,6 +35,22 @@ def get_ip() -> list:
         server.sendto(bytes(message, encoding='utf-8'), ('255.255.255.255', 6095))
         time.sleep(0.03)
         i += 1
+
+    # max tries before first data received
+    max = 5
+    i = 0
+    while i < max:
+        i += 1
+        try:
+            data, addr = server.recvfrom(1024, socket.MSG_PEEK)
+        except Exception as err:
+            _LOGGER.info(f'{i}/{max} try, udp timeout')
+            continue
+        _LOGGER.info(f'first udp.receiver:{addr[0]}')
+        break
+    else:
+        _LOGGER.warning('cannot find any device')
+        return []
     
     i = 255
     ip = []
