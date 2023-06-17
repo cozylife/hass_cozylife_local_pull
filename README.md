@@ -25,6 +25,13 @@ hass_cozylife_local_pull:
 * Please submit an issue
 * Send an email with the subject of hass support to info@cozylife.app
 
+### Troubleshoot 
+* Check whether the internal network isolation of the router is enabled
+* Check if the plugin is in the right place
+* Restart HASS multiple times
+* View the output log of the plugin
+* It is currently the first version of the plugin, there may be problems that cannot be found
+
 
 ### TODO
 - Compatible with python3.9
