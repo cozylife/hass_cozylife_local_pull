@@ -5,6 +5,7 @@ import time
 from typing import Optional, Union, Any
 import logging
 from .utils import get_pid_list, get_sn
+import threading
 
 CMD_INFO = 0
 CMD_QUERY = 2
@@ -58,17 +59,22 @@ class tcp_client(object):
             self._connect = None
         
     def _reconnect(self):
-        while True:
-            try:
-                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                s.settimeout(3)
-                s.connect((self._ip, self._port))
-                self._connect = s
-                self._device_info()
-                return
-            except Exception as e:
-                _LOGGER.info(f'Reconnection failed: {e}')
-                time.sleep(5)  # Wait for 5 seconds before trying to reconnect
+        def reconnect_thread():
+            while True:
+                try:
+                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    s.settimeout(3)
+                    s.connect((self._ip, self._port))
+                    self._connect = s
+                    self._device_info()
+                    return
+                except Exception as e:
+                    _LOGGER.info(f'Reconnection failed: {e}')
+                    time.sleep(60)  # Wait for 60 seconds before trying to reconnect
+
+        thread = threading.Thread(target=reconnect_thread)
+        thread.daemon = True  # This makes the thread exit when the main program exits
+        thread.start()
 
 
     @property
