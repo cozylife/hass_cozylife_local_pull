@@ -45,12 +45,22 @@ class tcp_client(object):
     
     def __init__(self, ip):
         self._ip = ip
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(3)
-        s.connect((self._ip, self._port))
-        self._connect = s
-        self._device_info()
+        self._reconnect()
     
+    def _reconnect(self):
+        while True:
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.settimeout(3)
+                s.connect((self._ip, self._port))
+                self._connect = s
+                self._device_info()
+                return
+            except Exception as e:
+                _LOGGER.info(f'Reconnection failed: {e}')
+                time.sleep(5)  # Wait for 5 seconds before trying to reconnect
+
+
     @property
     def check(self) -> bool:
         """
@@ -191,20 +201,20 @@ class tcp_client(object):
                     payload = json.loads(res.strip())
                     if payload is None or len(payload) == 0:
                         return {}
-    
+
                     if payload.get('msg') is None or type(payload['msg']) is not dict:
                         return {}
-    
+
                     if payload['msg'].get('data') is None or type(payload['msg']['data']) is not dict:
                         return {}
-                    
+
                     return payload['msg']['data']
-            
+
             return {}
-            
+
         except Exception as e:
-            # print(f'e={e}')
-            _LOGGER.info(f'_only_send.recv.error:{e}')
+            _LOGGER.info(f'_only_send.recv.error: {e}')
+            self._reconnect()  # Reconnect on exception
             return {}
     
     def _only_send(self, cmd: int, payload: dict) -> None:
