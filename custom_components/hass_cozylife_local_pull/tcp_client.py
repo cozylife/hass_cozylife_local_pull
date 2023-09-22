@@ -45,8 +45,18 @@ class tcp_client(object):
     
     def __init__(self, ip):
         self._ip = ip
+        self._connect = None  # Initialize _connect as None
+        self._close_connection() 
         self._reconnect()
     
+    def _close_connection(self):
+        if self._connect:
+            try:
+                self._connect.close()
+            except Exception as e:
+                _LOGGER.error(f'Error while closing the connection: {e}')
+            self._connect = None
+        
     def _reconnect(self):
         while True:
             try:
