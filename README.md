@@ -36,4 +36,6 @@ hass_cozylife_local_pull:
 ### TODO
 - Compatible with python3.9
 - Sending broadcasts regularly has reached the ability to discover devices at any time
+
+### PROGRESS
 - TCP reconnect
