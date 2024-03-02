@@ -3,7 +3,10 @@ import json
 import time
 import requests
 import logging
-
+from .const import (
+    API_DOMAIN,
+    LANG
+)
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -29,10 +32,11 @@ def get_pid_list(lang='en') -> list:
     if len(_CACHE_PID) != 0:
         return _CACHE_PID
     
-    domain = 'api-us.doiting.com'
-    protocol = 'http'
-    url_prefix = protocol + '://' + domain
-    res = requests.get(url_prefix + '/api/device_product/model', {
+    if lang not in ['zh', 'en', 'es', 'pt', 'ja', 'ru', 'pt', 'nl', 'ko', 'fr', 'de',]:
+        _LOGGER.info(f'not support lang={lang}, will set lang={LANG}')
+        lang = LANG
+
+    res = requests.get(f'http://{API_DOMAIN}/api/v2/device_product/model', {
         'lang': lang
     }, timeout=3)
     
@@ -57,5 +61,5 @@ def get_pid_list(lang='en') -> list:
     if pid_list['info'].get('list') is None or type(pid_list['info']['list']) is not list:
         return []
     
-    _CACHE_PID = pid_list['info']['list']
+    _CACHE_PID = pid_list['info']['list']    
     return _CACHE_PID

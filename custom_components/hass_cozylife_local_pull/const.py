@@ -15,3 +15,5 @@ SAT = '6'
 
 LIGHT_DPID = [SWITCH, WORK_MODE, TEMP, BRIGHT, HUE, SAT]
 SWITCH_DPID = [SWITCH, ]
+LANG = 'en'
+API_DOMAIN = 'api-us.doiting.com'

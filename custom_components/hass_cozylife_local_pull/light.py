@@ -27,7 +27,6 @@ from homeassistant.components.light import (
     SUPPORT_TRANSITION,
     LightEntity,
 )
-from homeassistant.const import TEMP_CELSIUS
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
@@ -51,8 +50,7 @@ from homeassistant.components import zeroconf
 _LOGGER = logging.getLogger(__name__)
 _LOGGER.info(__name__)
 
-
-async def async_setup_platform(
+def setup_platform(
     hass: HomeAssistant,
     config: ConfigType,
     add_entities: AddEntitiesCallback,
@@ -66,6 +64,7 @@ async def async_setup_platform(
     # _LOGGER.info(f'zc={zc}')
     _LOGGER.info(f'hass.data={hass.data[DOMAIN]}')
     _LOGGER.info(f'discovery_info={discovery_info}')
+
     if discovery_info is None:
         return
     
@@ -99,7 +98,7 @@ class CozyLifeLight(LightEntity):
         _LOGGER.info('__init__')
         self._tcp_client = tcp_client
         self._unique_id = tcp_client.device_id
-        self._name = tcp_client.device_model_name
+        self._name = tcp_client.device_model_name + ' ' + tcp_client.device_id[-4:]
         
         _LOGGER.info(f'before:{self._unique_id}._attr_color_mode={self._attr_color_mode}._attr_supported_color_modes='
                      f'{self._attr_supported_color_modes}.dpid={tcp_client.dpid}')
@@ -137,7 +136,7 @@ class CozyLifeLight(LightEntity):
     
     @property
     def name(self) -> str:
-        return 'cozylife:' + self._name
+        return self._name
     
     @property
     def available(self) -> bool:

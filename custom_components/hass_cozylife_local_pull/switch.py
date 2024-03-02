@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.components.switch import SwitchEntity
-from homeassistant.const import TEMP_CELSIUS
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
@@ -46,7 +45,7 @@ def setup_platform(
     for item in hass.data[DOMAIN]['tcp_client']:
         if SWITCH_TYPE_CODE == item.device_type_code:
             switchs.append(CozyLifeSwitch(item))
-
+    
     add_entities(switchs)
 
 
@@ -59,7 +58,7 @@ class CozyLifeSwitch(SwitchEntity):
         _LOGGER.info('__init__')
         self._tcp_client = tcp_client
         self._unique_id = tcp_client.device_id
-        self._name = tcp_client.device_model_name
+        self._name = tcp_client.device_model_name + ' ' + tcp_client.device_id[-4:]
         self._refresh_state()
     
     def _refresh_state(self):
@@ -68,7 +67,7 @@ class CozyLifeSwitch(SwitchEntity):
     
     @property
     def name(self) -> str:
-        return 'cozylife:' + self._name
+        return self._name
     
     @property
     def available(self) -> bool:

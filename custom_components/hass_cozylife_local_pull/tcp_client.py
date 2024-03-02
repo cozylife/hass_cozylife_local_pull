@@ -59,7 +59,7 @@ class tcp_client(object):
             self._connect = None
         
     def _reconnect(self):
-        def reconnect_thread():
+        def reconnect_thread():            
             while True:
                 try:
                     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -113,7 +113,7 @@ class tcp_client(object):
         self._only_send(CMD_INFO, {})
         try:
             resp = self._connect.recv(1024)
-            resp_json = json.loads(resp.strip())
+            resp_json = json.loads(resp.strip())            
         except:
             _LOGGER.info('_device_info.recv.error')
             return None
@@ -127,27 +127,28 @@ class tcp_client(object):
             _LOGGER.info('_device_info.recv.error2')
             
             return None
+
         self._device_id = resp_json['msg']['did']
         
         if resp_json['msg'].get('pid') is None:
             _LOGGER.info('_device_info.recv.error3')
             return None
         
-        self._pid = resp_json['msg']['pid']
-        
+        self._pid = resp_json['msg']['pid']        
         pid_list = get_pid_list()
+
         for item in pid_list:
             match = False
-            for item1 in item['device_model']:
-                if item1['device_product_id'] == self._pid:
+            for item1 in item['m']:
+                if item1['pid'] == self._pid:
                     match = True
-                    self._icon = item1['icon']
-                    self._device_model_name = item1['device_model_name']
+                    self._icon = item1['i']
+                    self._device_model_name = item1['n']
                     self._dpid = item1['dpid']
                     break
             
             if match:
-                self._device_type_code = item['device_type_code']
+                self._device_type_code = item['c']                
                 break
         
         # _LOGGER.info(pid_list)

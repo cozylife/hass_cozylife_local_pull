@@ -18,6 +18,9 @@ maintained by the CozyLife Team.
 * configuration.yaml
 ```
 hass_cozylife_local_pull:
+   lang: en
+   ip:
+     - "192.168.1.99"
 ```
 
 
@@ -34,8 +37,8 @@ hass_cozylife_local_pull:
 
 
 ### TODO
-- Compatible with python3.9
 - Sending broadcasts regularly has reached the ability to discover devices at any time
+- Support sensor device
 
 ### PROGRESS
-- TCP reconnect
+- None
