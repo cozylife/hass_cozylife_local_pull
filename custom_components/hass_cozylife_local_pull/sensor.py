@@ -59,6 +59,7 @@ class CozyLifeSensor(SensorEntity):
         self._unique_id = 'pw_' + tcp_client.device_id
         self.attrs: dict[str, Any] = {}
         self._name = tcp_client.device_model_name + ' ' + tcp_client.device_id[-4:] + ' Power'
+        self._state = None
         self._refresh_state()
     
     def _refresh_state(self):
@@ -82,6 +83,11 @@ class CozyLifeSensor(SensorEntity):
     def state(self) -> str | None:
         return self._state
         
+    @property
+    def unit_of_measurement(self):
+        """Return the unit this state is expressed in."""
+        return 'KW'
+    
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         return self.attrs
