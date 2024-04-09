@@ -63,8 +63,11 @@ class CozyLifeSwitch(SwitchEntity):
     
     def _refresh_state(self):
         self._state = self._tcp_client.query()
-        self._attr_is_on = 0 != self._state['1']
-    
+        try:
+            self._attr_is_on = 0 != self._state['1']
+        except Exception:
+            self._attr_is_on = False
+                
     @property
     def name(self) -> str:
         return self._name
