@@ -58,7 +58,7 @@ class CozyLifeSwitch(SwitchEntity):
         """Initialize the sensor."""
         _LOGGER.info('__init__')
         self._tcp_client = tcp_client
-        self._unique_id = tcp_client.device_id
+        self._unique_id = 'sw_' + tcp_client.device_id
         self._name = tcp_client.device_model_name + ' ' + tcp_client.device_id[-4:]
         self._refresh_state()
     
@@ -113,7 +113,7 @@ class CozyLifeSensor(SensorEntity):
         """Initialize the sensor."""
         _LOGGER.info('__init__')
         self._tcp_client = tcp_client
-        self._unique_id = tcp_client.device_id
+        self._unique_id = 'pw_' + tcp_client.device_id
         self.attrs: dict[str, Any] = {}
         self._name = tcp_client.device_model_name + ' ' + tcp_client.device_id[-4:] + ' Power'
         self._refresh_state()
