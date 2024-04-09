@@ -48,7 +48,7 @@ def setup(hass: HomeAssistant, config: ConfigType) -> bool:
     #but it is bad
     time.sleep(3)
     # _LOGGER.info('setup', hass, config)
-    # hass.helpers.discovery.load_platform('sensor', DOMAIN, {}, config)
+    hass.helpers.discovery.load_platform('sensor', DOMAIN, {}, config)
     hass.helpers.discovery.load_platform('light', DOMAIN, {}, config)
     hass.helpers.discovery.load_platform('switch', DOMAIN, {}, config)
     
