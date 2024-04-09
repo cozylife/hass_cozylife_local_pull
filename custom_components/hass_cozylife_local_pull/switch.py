@@ -45,7 +45,6 @@ def setup_platform(
     for item in hass.data[DOMAIN]['tcp_client']:
         if SWITCH_TYPE_CODE == item.device_type_code:
             switchs.append(CozyLifeSwitch(item))
-            switchs.append(CozyLifeSensor(item))
     
     add_entities(switchs)
 
@@ -104,41 +103,3 @@ class CozyLifeSwitch(SwitchEntity):
         return None
         
         raise NotImplementedError()
-
-class CozyLifeSensor(SensorEntity):
-    _tcp_client = None
-    _state = True
-    
-    def __init__(self, tcp_client) -> None:
-        """Initialize the sensor."""
-        _LOGGER.info('__init__')
-        self._tcp_client = tcp_client
-        self._unique_id = 'pw_' + tcp_client.device_id
-        self.attrs: dict[str, Any] = {}
-        self._name = tcp_client.device_model_name + ' ' + tcp_client.device_id[-4:] + ' Power'
-        self._refresh_state()
-    
-    def _refresh_state(self):
-        self._state = self._tcp_client.query()['28']
-    
-    @property
-    def name(self) -> str:
-        return self._name
-    
-    @property
-    def available(self) -> bool:
-        """Return if the device is available."""
-        return True
-    
-    @property
-    def unique_id(self) -> str | None:
-        """Return a unique ID."""
-        return self._unique_id
-
-    @property
-    def state(self) -> str | None:
-        return self._state
-        
-    @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        return self.attrs
