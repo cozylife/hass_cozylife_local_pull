@@ -91,3 +91,6 @@ class CozyLifeSensor(SensorEntity):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         return self.attrs
+
+    async def async_update(self):
+        self._refresh_state()
