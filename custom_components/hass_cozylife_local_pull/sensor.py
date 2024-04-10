@@ -44,9 +44,9 @@ def setup_platform(
     sensors = []
     for item in hass.data[DOMAIN]['tcp_client']:
         if SWITCH_TYPE_CODE == item.device_type_code:
-            sensors.append(CozyLifeSensor(item, '28'))
-            sensors.append(CozyLifeSensor(item, '2'))
-            sensors.append(CozyLifeSensor(item, '26'))
+            sensors.append(CozyLifeSensor(item, '28', 'kW'))
+            sensors.append(CozyLifeSensor(item, '2', 'kWh'))
+            sensors.append(CozyLifeSensor(item, '26', 'kWh'))
     
     add_entities(sensors)
 
@@ -54,19 +54,23 @@ class CozyLifeSensor(SensorEntity):
     _tcp_client = None
     _state = True
     
-    def __init__(self, tcp_client, fld) -> None:
+    def __init__(self, tcp_client, fld, unit) -> None:
         """Initialize the sensor."""
         _LOGGER.info('__init__')
         self._tcp_client = tcp_client
-        self._unique_id = 'pw_' + tcp_client.device_id
+        self._unique_id = 'pw_' + fld + '_' + tcp_client.device_id
         self.attrs: dict[str, Any] = {}
         self._name = tcp_client.device_model_name + ' ' + tcp_client.device_id[-4:] + ' Power'
         self._state = None
         self._refresh_state()
         self._fld = fld
+        self._unit = unit
     
     def _refresh_state(self):
-        self._state = self._tcp_client.query()[self._fld]
+        try:
+            self._state = self._tcp_client.query()[self._fld]
+        except Exception:
+            self._state = 0     
     
     @property
     def name(self) -> str:
@@ -89,7 +93,7 @@ class CozyLifeSensor(SensorEntity):
     @property
     def unit_of_measurement(self):
         """Return the unit this state is expressed in."""
-        return 'KW'
+        return self._unit
     
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
