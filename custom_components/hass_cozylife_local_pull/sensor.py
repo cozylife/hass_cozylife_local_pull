@@ -44,7 +44,9 @@ def setup_platform(
     sensors = []
     for item in hass.data[DOMAIN]['tcp_client']:
         if SWITCH_TYPE_CODE == item.device_type_code:
-            sensors.append(CozyLifeSensor(item))
+            sensors.append(CozyLifeSensor(item, '28'))
+            sensors.append(CozyLifeSensor(item, '2'))
+            sensors.append(CozyLifeSensor(item, '26'))
     
     add_entities(sensors)
 
@@ -52,7 +54,7 @@ class CozyLifeSensor(SensorEntity):
     _tcp_client = None
     _state = True
     
-    def __init__(self, tcp_client) -> None:
+    def __init__(self, tcp_client, fld) -> None:
         """Initialize the sensor."""
         _LOGGER.info('__init__')
         self._tcp_client = tcp_client
@@ -61,9 +63,10 @@ class CozyLifeSensor(SensorEntity):
         self._name = tcp_client.device_model_name + ' ' + tcp_client.device_id[-4:] + ' Power'
         self._state = None
         self._refresh_state()
+        self._fld = fld
     
     def _refresh_state(self):
-        self._state = self._tcp_client.query()['28']
+        self._state = self._tcp_client.query()[self._fld]
     
     @property
     def name(self) -> str:
