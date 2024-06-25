@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.typing import ConfigType
+from homeassistant.helpers.discovery import load_platform
+
 import logging
 import time
 from .const import (
@@ -49,7 +51,7 @@ def setup(hass: HomeAssistant, config: ConfigType) -> bool:
     time.sleep(3)
     # _LOGGER.info('setup', hass, config)
     # hass.helpers.discovery.load_platform('sensor', DOMAIN, {}, config)
-    hass.helpers.discovery.load_platform('light', DOMAIN, {}, config)
-    hass.helpers.discovery.load_platform('switch', DOMAIN, {}, config)
+    load_platform(hass,'light', DOMAIN, {}, config)
+    load_platform(hass,'switch', DOMAIN, {}, config)
     
     return True
