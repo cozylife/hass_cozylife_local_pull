@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.discovery import async_load_platform
 from homeassistant.helpers.typing import ConfigType
 import logging
 import time
@@ -49,7 +50,6 @@ def setup(hass: HomeAssistant, config: ConfigType) -> bool:
     time.sleep(3)
     # _LOGGER.info('setup', hass, config)
     # hass.helpers.discovery.load_platform('sensor', DOMAIN, {}, config)
-    hass.helpers.discovery.load_platform('light', DOMAIN, {}, config)
-    hass.helpers.discovery.load_platform('switch', DOMAIN, {}, config)
-    
+    hass.loop.call_soon_threadsafe(hass.async_create_task, async_load_platform(hass, 'light', DOMAIN, {}, config))
+    hass.loop.call_soon_threadsafe(hass.async_create_task, async_load_platform(hass, 'switch', DOMAIN, {}, config))
     return True
