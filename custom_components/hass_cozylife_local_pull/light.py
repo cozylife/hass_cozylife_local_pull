@@ -1,232 +1,222 @@
-"""Platform for sensor integration."""
+"""Light platform for CozyLife Local Pull integration."""
 from __future__ import annotations
 
-from homeassistant.components.sensor import SensorEntity
-from homeassistant.components.switch import SwitchEntity
-from homeassistant.components.light import LightEntity
-# from homeassistant.components.light import *
+import logging
+from typing import Any
+
 from homeassistant.components.light import (
     ATTR_BRIGHTNESS,
-    ATTR_COLOR_TEMP,
-    ATTR_EFFECT,
-    ATTR_FLASH,
+    ATTR_COLOR_TEMP_KELVIN,
     ATTR_HS_COLOR,
-    ATTR_KELVIN,
-    ATTR_RGB_COLOR,
-    ATTR_TRANSITION,
-    COLOR_MODE_BRIGHTNESS,
-    COLOR_MODE_COLOR_TEMP,
-    COLOR_MODE_HS,
-    COLOR_MODE_ONOFF,
-    COLOR_MODE_RGB,
-    COLOR_MODE_UNKNOWN,
-    FLASH_LONG,
-    FLASH_SHORT,
-    SUPPORT_EFFECT,
-    SUPPORT_FLASH,
-    SUPPORT_TRANSITION,
+    ColorMode,
     LightEntity,
+    DEFAULT_MAX_KELVIN,
+    DEFAULT_MIN_KELVIN,
 )
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
-from typing import Any, Final, Literal, TypedDict, final
-from .const import (
-    DOMAIN,
-    SWITCH_TYPE_CODE,
-    LIGHT_TYPE_CODE,
-    LIGHT_DPID,
-    SWITCH,
-    WORK_MODE,
-    TEMP,
-    BRIGHT,
-    HUE,
-    SAT,
-)
-from .tcp_client import tcp_client
-import logging
-from homeassistant.components import zeroconf
+from homeassistant.util import color as colorutil
+
+from .const import DOMAIN, LIGHT_TYPE_CODE
+from .tcp_client import CozyLifeDevice
 
 _LOGGER = logging.getLogger(__name__)
-_LOGGER.info(__name__)
 
-def setup_platform(
+
+async def async_setup_entry(
     hass: HomeAssistant,
-    config: ConfigType,
-    add_entities: AddEntitiesCallback,
-    discovery_info: DiscoveryInfoType | None = None
+    config_entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up the sensor platform."""
-    # We only want this platform to be set up via discovery.
-    _LOGGER.info(
-        f'setup_platform.hass={hass},config={config},add_entities={add_entities},discovery_info={discovery_info}')
-    # zc = await zeroconf.async_get_instance(hass)
-    # _LOGGER.info(f'zc={zc}')
-    _LOGGER.info(f'hass.data={hass.data[DOMAIN]}')
-    _LOGGER.info(f'discovery_info={discovery_info}')
+    """Set up light platform from a config entry."""
+    _LOGGER.info("Setting up light platform")
 
-    if discovery_info is None:
+    if DOMAIN not in hass.data or config_entry.entry_id not in hass.data[DOMAIN]:
+        _LOGGER.warning("Integration not initialized")
         return
-    
-    lights = []
-    for item in hass.data[DOMAIN]['tcp_client']:
-        if LIGHT_TYPE_CODE == item.device_type_code:
-            lights.append(CozyLifeLight(item))
-    
-    add_entities(lights)
+
+    data = hass.data[DOMAIN][config_entry.entry_id]
+    device_manager = data.get("device_manager")
+
+    if not device_manager:
+        return
+
+    # Get all light devices
+    light_devices = device_manager.get_devices_by_type(LIGHT_TYPE_CODE)
+
+    lights = [CozyLifeLight(device) for device in light_devices]
+
+    async_add_entities(lights)
+    _LOGGER.info(f"Added {len(lights)} light entities")
 
 
 class CozyLifeLight(LightEntity):
-    # _attr_brightness: int | None = None
-    # _attr_color_mode: str | None = None
-    # _attr_color_temp: int | None = None
-    # _attr_hs_color = None
-    _tcp_client = None
-    
-    _attr_supported_color_modes = {COLOR_MODE_BRIGHTNESS, COLOR_MODE_ONOFF}
-    _attr_color_mode = COLOR_MODE_BRIGHTNESS
-    
-    # _unique_id = str
-    # _attr_is_on = True
-    # _name = str
-    # _attr_brightness = int
-    # _attr_color_temp = int
-    # _attr_hs_color = (float, float)
-    
-    def __init__(self, tcp_client: tcp_client) -> None:
-        """Initialize the sensor."""
-        _LOGGER.info('__init__')
-        self._tcp_client = tcp_client
-        self._unique_id = tcp_client.device_id
-        self._name = tcp_client.device_model_name + ' ' + tcp_client.device_id[-4:]
-        
-        _LOGGER.info(f'before:{self._unique_id}._attr_color_mode={self._attr_color_mode}._attr_supported_color_modes='
-                     f'{self._attr_supported_color_modes}.dpid={tcp_client.dpid}')
-        # h s
-        if 3 in tcp_client.dpid:
-            self._attr_color_mode = COLOR_MODE_COLOR_TEMP
-            self._attr_supported_color_modes.add(COLOR_MODE_COLOR_TEMP)
-        
-        if 5 in tcp_client.dpid or 6 in tcp_client.dpid:
-            self._attr_color_mode = COLOR_MODE_HS
-            self._attr_supported_color_modes.add(COLOR_MODE_HS)
-        
-        _LOGGER.info(f'after:{self._unique_id}._attr_color_mode={self._attr_color_mode}._attr_supported_color_modes='
-                     f'{self._attr_supported_color_modes}.dpid={tcp_client.dpid}')
-        
-        self._refresh_state()
-    
-    def _refresh_state(self):
-        """
-        query device & set attr
-        :return:
-        """
-        self._state = self._tcp_client.query()
-        _LOGGER.info(f'_state={self._state}')
-        self._attr_is_on = 0 < self._state['1']
-        
-        if '4' in self._state:
-            self._attr_brightness = int(self._state['4'] / 4)
-        
-        if '5' in self._state:
-            self._attr_hs_color = (int(self._state['5']), int(self._state['6'] / 10))
-        
-        if '3' in self._state:
-            self._attr_color_temp = 500 - int(self._state['3'] / 2)
-    
-    @property
-    def name(self) -> str:
-        return self._name
-    
+    """Representation of a CozyLife light."""
+
+    _attr_has_entity_name = True
+
+    def __init__(self, device: CozyLifeDevice) -> None:
+        """Initialize the light."""
+        self._device = device
+        self._attr_unique_id = device.device_id
+        self._attr_name = f"{device.device_model_name}"
+
+        # Set device info to associate this entity with the device
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, device.device_id)},
+            manufacturer="CozyLife",
+            model=device.device_model_name,
+            name=device.device_model_name,
+        )
+
+        # Calculate color temperature limits (Mireds)
+        # Cold: 6500K, Warm: 2700K
+        self._min_mireds = colorutil.color_temperature_kelvin_to_mired(6500)
+        self._max_mireds = colorutil.color_temperature_kelvin_to_mired(2700)
+        self._miredsratio = (self._max_mireds - self._min_mireds) / 1000
+        self._attr_min_color_temp_kelvin = DEFAULT_MIN_KELVIN
+        self._attr_max_color_temp_kelvin = DEFAULT_MAX_KELVIN
+
+        # Initialize supported color modes - start with basic modes
+        self._attr_supported_color_modes = {ColorMode.BRIGHTNESS, ColorMode.ONOFF}
+        self._attr_color_mode = ColorMode.BRIGHTNESS
+
+        # Add color modes based on device capabilities
+        # Important: Use .add() to support multiple modes, not replace
+        if 3 in device.dpid:
+            # Device supports color temperature
+            self._attr_color_mode = ColorMode.COLOR_TEMP
+            self._attr_supported_color_modes.add(ColorMode.COLOR_TEMP)
+
+        if 5 in device.dpid or 6 in device.dpid:
+            # Device supports HS color
+            self._attr_color_mode = ColorMode.HS
+            self._attr_supported_color_modes.add(ColorMode.HS)
+
+        _LOGGER.debug(
+            f"Device {device.device_id}: dpid={device.dpid}, "
+            f"color_mode={self._attr_color_mode}, "
+            f"supported_color_modes={self._attr_supported_color_modes}"
+        )
+
+        # Initialize state with sensible defaults (not None)
+        # This ensures the entity has valid state even before first update
+        self._attr_is_on = False
+        self._attr_brightness = 128  # Mid-range brightness
+        self._attr_color_temp_kelvin = 4000  # Warm-neutral color temp
+        self._attr_hs_color = (0, 0)  # Black/off state for HS
+
+        _LOGGER.debug(
+            f"Initialized light {self._attr_unique_id} with color mode: {self._attr_color_mode}, supported: {self._attr_supported_color_modes}"
+        )
+
     @property
     def available(self) -> bool:
         """Return if the device is available."""
-        return True
-    
-    @property
-    def is_on(self) -> bool:
-        """Return True if entity is on."""
-        self._refresh_state()
-        return self._attr_is_on
-    
-    @property
-    def color_temp(self) -> int | None:
-        """Return the CT color value in mireds."""
-        return self._attr_color_temp
-    
-    @property
-    def unique_id(self) -> str | None:
-        """Return a unique ID."""
-        return self._unique_id
+        # Entity is available if device is available
+        return self._device.is_available
 
-    def turn_on(self, **kwargs: Any) -> None:
-        """Turn the entity on."""
-        self._attr_is_on = True
+    async def async_added_to_hass(self) -> None:
+        """Run when entity is added to Home Assistant."""
+        await super().async_added_to_hass()
+        # Fetch initial state from device
+        await self.async_update()
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        """Turn the light on."""
+        # dpid 2 = 0: normal color/brightness mode, 1: special effects mode
+        # For normal control, always use dpid 2 = 0
+        payload = {"1": 255, "2": 0}
+
         brightness = kwargs.get(ATTR_BRIGHTNESS)
-        # 153 ~ 500
-        colortemp = kwargs.get(ATTR_COLOR_TEMP)
-        # tuple
         hs_color = kwargs.get(ATTR_HS_COLOR)
-        rgb = kwargs.get(ATTR_RGB_COLOR)
-        flash = kwargs.get(ATTR_FLASH)
-        effect = kwargs.get(ATTR_EFFECT)
-        _LOGGER.info(f'turn_on.kwargs={kwargs}')
-        
-        payload = {'1': 255, '2': 0}
-        if brightness is not None:
-            payload['4'] = brightness * 4
-            self._attr_brightness = brightness
-        
+        colortemp_kelvin = kwargs.get(ATTR_COLOR_TEMP_KELVIN)
+
+        # Handle HS color (dpid 5, 6)
         if hs_color is not None:
-            payload['5'] = int(hs_color[0])
-            payload['6'] = int(hs_color[1] * 10)
+            r, g, b = colorutil.color_hs_to_RGB(*hs_color)
+            converted_hs = colorutil.color_RGB_to_hs(r, g, b)
+            payload["5"] = round(converted_hs[0])
+            payload["6"] = round(converted_hs[1] * 10)
             self._attr_hs_color = hs_color
-        
-        if colortemp is not None:
-            payload['3'] = 1000 - colortemp * 2
-        
-        self._tcp_client.control(payload)
-        self._refresh_state()
-        return None
-        raise NotImplementedError()
-    
-    def turn_off(self, **kwargs: Any) -> None:
-        """Turn the entity off."""
+            self._attr_color_mode = ColorMode.HS
+            _LOGGER.debug(f"HS color: HA H={hs_color[0]}, S={hs_color[1]}, payload 5={payload['5']}, 6={payload['6']}")
+
+        # Handle color temperature (dpid 3)
+        if colortemp_kelvin is not None:
+            mireds = colorutil.color_temperature_kelvin_to_mired(colortemp_kelvin)
+            payload["3"] = round(1000 - (mireds - self._min_mireds) / self._miredsratio)
+            self._attr_color_temp_kelvin = colortemp_kelvin
+            self._attr_color_mode = ColorMode.COLOR_TEMP
+            _LOGGER.debug(f"Color temp: Kelvin={colortemp_kelvin}, payload={payload['3']}")
+
+        # Handle brightness (dpid 4) - applies to all modes
+        if brightness is not None:
+            payload["4"] = round(brightness / 255 * 1000)
+            self._attr_brightness = brightness
+            _LOGGER.debug(f"Brightness: HA={brightness}, payload={payload['4']}")
+
+        _LOGGER.info(f"Sending payload: {payload}")
+        await self._device.async_control(payload)
+        self._attr_is_on = True
+        self.async_write_ha_state()
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        """Turn the light off."""
+        await self._device.async_control({"1": 0})
         self._attr_is_on = False
-        _LOGGER.info(f'turn_off.kwargs={kwargs}')
-        self._tcp_client.control({'1': 0})
-        self._refresh_state()
-        
-        return None
-        
-        raise NotImplementedError()
-    
-    @property
-    def hs_color(self) -> tuple[float, float] | None:
-        """Return the hue and saturation color value [float, float]."""
-        _LOGGER.info('hs_color')
-        self._refresh_state()
-        return self._attr_hs_color
-    
-    @property
-    def brightness(self) -> int | None:
-        """Return the brightness of this light between 0..255."""
-        _LOGGER.info('brightness')
-        self._refresh_state()
-        return self._attr_brightness
-    
-    @property
-    def color_mode(self) -> str | None:
-        """Return the color mode of the light."""
-        _LOGGER.info('color_mode')
-        return self._attr_color_mode
-    
-    # def set_brightness(self, b):
-    #     _LOGGER.info('set_brightness')
-    #
-    #     self._attr_brightness = b
-    #
-    # def set_hs(self, hs_color, duration) -> None:
-    #     """Set bulb's color."""
-    #     _LOGGER.info('set_hs')
-    #     self._attr_hs_color = (hs_color[0], hs_color[1])
+        self.async_write_ha_state()
+
+    async def async_update(self) -> None:
+        """Update the light state from device."""
+        state = await self._device.async_query()
+        if not state:
+            _LOGGER.debug(f"Failed to query device {self._attr_unique_id}, device may be initializing")
+            return
+
+        _LOGGER.debug(f"Device state: {state}")
+
+        # Update on/off state (dpid 1)
+        if "1" in state:
+            self._attr_is_on = state["1"] > 0
+
+        # Check dpid 2 (mode): 0 = normal mode, 1 = special effects mode
+        # Only update color/brightness values when in normal mode (dpid 2 == 0)
+        device_mode = state.get("2", 0)
+
+        # Update brightness (dpid 4): device 0-1000 → HA 0-255
+        # Brightness is available in normal mode
+        if "4" in state:
+            brightness_value = int(state["4"])
+            # Validate brightness value
+            if 0 <= brightness_value <= 1000:
+                self._attr_brightness = int(brightness_value / 1000 * 255)
+                _LOGGER.debug(f"Brightness: dpid 4={brightness_value} → {self._attr_brightness}")
+
+        # Only update color values when device is in normal mode (dpid 2 == 0)
+        if device_mode == 0:
+            # Update color temperature (dpid 3) if present
+            if "3" in state:
+                device_value = int(state["3"])
+                # Validate color temp value (skip if > 60000, indicating invalid data)
+                if 0 <= device_value < 60000:
+                    mireds = self._max_mireds - (device_value * self._miredsratio)
+                    if mireds > 0:
+                        self._attr_color_temp_kelvin = int(1000000 / mireds)
+                        self._attr_color_mode = ColorMode.COLOR_TEMP
+                        _LOGGER.debug(f"Color temp: dpid 3={device_value} → {self._attr_color_temp_kelvin}K")
+
+            # Update HS color (dpid 5, 6) if present
+            if "5" in state and "6" in state:
+                h_device = int(state["5"])
+                s_device = int(state["6"] / 10)
+                # Validate HS values (skip if > 60000, indicating invalid data)
+                if h_device < 60000 and s_device < 60000:
+                    # Convert through RGB for proper color space handling
+                    r, g, b = colorutil.color_hs_to_RGB(h_device, s_device)
+                    h_ha, s_ha = colorutil.color_RGB_to_hs(r, g, b)
+                    self._attr_hs_color = (h_ha, s_ha)
+                    self._attr_color_mode = ColorMode.HS
+                    _LOGGER.debug(f"HS color: dpid 5={state['5']}, dpid 6={state['6']} → H={h_ha}, S={s_ha}")

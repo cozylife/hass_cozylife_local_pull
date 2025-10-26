@@ -1,3 +1,7 @@
 {
-  "name": "CozyLife local pulling"
+  "name": "CozyLife Local Pull",
+  "homeassistant": "2021.12.0",
+  "documentation": "https://github.com/zqbake/hass_cozylife_local_pull",
+  "issues": "https://github.com/zqbake/hass_cozylife_local_pull/issues",
+  "requirements": ["voluptuous"]
 }

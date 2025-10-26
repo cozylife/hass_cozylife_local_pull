@@ -1,0 +1,21 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configure CozyLife Local",
+        "description": "{guide}"
+      },
+      "import": {
+        "title": "Import from YAML"
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "CozyLife Local Options",
+        "description": "{guide}"
+      }
+    }
+  }
+}

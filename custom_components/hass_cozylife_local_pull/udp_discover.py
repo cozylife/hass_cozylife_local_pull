@@ -1,5 +1,7 @@
 import socket
 import time
+import ipaddress
+import asyncio
 from .utils import get_sn
 import logging
 
@@ -9,6 +11,71 @@ _LOGGER = logging.getLogger(__name__)
 """
 discover device
 """
+
+
+async def scan_subnet_async(subnet: str, timeout: float = 1.0) -> list:
+    """
+    Scan a subnet for CozyLife devices by attempting TCP connection.
+
+    Args:
+        subnet: CIDR notation subnet (e.g., '192.168.2.0/24')
+        timeout: Connection timeout in seconds
+
+    Returns:
+        List of IP addresses where CozyLife devices were found
+    """
+    found_ips = []
+
+    try:
+        # Parse the subnet
+        network = ipaddress.ip_network(subnet, strict=False)
+        _LOGGER.info(f"Scanning subnet {subnet} ({network.num_addresses} hosts)")
+
+        # Create tasks for all IPs in the subnet
+        tasks = []
+        for ip in network.hosts():  # Skip network and broadcast addresses
+            tasks.append(_check_device_at_ip(str(ip), timeout))
+
+        # Run all checks concurrently
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        for ip, found in zip([str(ip) for ip in network.hosts()], results):
+            if found is True:
+                found_ips.append(ip)
+                _LOGGER.info(f"Found CozyLife device at {ip}")
+
+    except ValueError as e:
+        _LOGGER.error(f"Invalid subnet format '{subnet}': {e}")
+    except Exception as e:
+        _LOGGER.error(f"Error scanning subnet {subnet}: {e}")
+
+    return found_ips
+
+
+async def _check_device_at_ip(ip: str, timeout: float = 1.0) -> bool:
+    """
+    Check if there's a CozyLife device at the given IP by attempting TCP connection.
+
+    Args:
+        ip: IP address to check
+        timeout: Connection timeout in seconds
+
+    Returns:
+        True if device found, False otherwise
+    """
+    try:
+        # Try to connect to TCP port 5555 (CozyLife device port)
+        reader, writer = await asyncio.wait_for(
+            asyncio.open_connection(ip, 5555),
+            timeout=timeout
+        )
+        writer.close()
+        await writer.wait_closed()
+        return True
+    except (asyncio.TimeoutError, ConnectionRefusedError, OSError):
+        return False
+    except Exception:
+        return False
 
 
 def get_ip() -> list:
