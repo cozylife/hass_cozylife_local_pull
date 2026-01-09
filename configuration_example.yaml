@@ -1,0 +1,15 @@
+hass_cozylife_local_pull:
+  lang: en
+  devices:
+    - serial_number: 767941640050c2edda8b
+      alias: Switch_02
+      ip: 192.168.123.151
+    - serial_number: 767953670050c2856f66
+      alias: Switch_03
+      ip: 192.168.123.158
+    - serial_number: 767976720050c2d1fffb
+      alias: Switch_04
+      ip: 192.168.123.159
+    - serial_number: 767993670050c2e938a1
+      alias: Switch_05
+      ip: 192.168.123.160

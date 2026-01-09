@@ -24,7 +24,7 @@ class tcp_client(object):
     send:{"cmd":2,"pv":0,"sn":"1636463611798","msg":{"attr":[0]}}
     receiver:{"cmd":2,"pv":0,"sn":"1636463611798","msg":{"attr":[1,2,3,4,5,6],"data":{"1":0,"2":0,"3":1000,"4":1000,
     "5":65535,"6":65535}},"res":0}
-    
+
     send:{"cmd":3,"pv":0,"sn":"1636463662455","msg":{"attr":[1],"data":{"1":0}}}
     receiver:{"cmd":3,"pv":0,"sn":"1636463662455","msg":{"attr":[1],"data":{"1":0}},"res":0}
     receiver:{"cmd":10,"pv":0,"sn":"1636463664000","res":0,"msg":{"attr":[1,2,3,4,5,6],"data":{"1":0,"2":0,"3":1000,
@@ -33,7 +33,7 @@ class tcp_client(object):
     _ip = str
     _port = 5555
     _connect = socket
-    
+
     _device_id = str
     # _device_key = str
     _pid = str
@@ -43,13 +43,15 @@ class tcp_client(object):
     _dpid = []
     # last sn
     _sn = str
-    
-    def __init__(self, ip):
+    _alias = str
+
+    def __init__(self, ip, alias=None):
         self._ip = ip
+        self._alias = alias
         self._connect = None  # Initialize _connect as None
-        self._close_connection() 
+        self._close_connection()
         self._reconnect()
-    
+
     def _close_connection(self):
         if self._connect:
             try:
@@ -57,9 +59,9 @@ class tcp_client(object):
             except Exception as e:
                 _LOGGER.error(f'Error while closing the connection: {e}')
             self._connect = None
-        
+
     def _reconnect(self):
-        def reconnect_thread():            
+        def reconnect_thread():
             while True:
                 try:
                     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -84,27 +86,31 @@ class tcp_client(object):
         :return:
         """
         return True
-    
+
     @property
     def dpid(self):
         return self._dpid
-    
+
     @property
     def device_model_name(self):
         return self._device_model_name
-    
+
     @property
     def icon(self):
         return self._icon
-    
+
     @property
     def device_type_code(self) -> str:
         return self._device_type_code
-    
+
     @property
     def device_id(self):
         return self._device_id
-    
+
+    @property
+    def alias(self):
+        return self._alias
+
     def _device_info(self) -> None:
         """
         get info for device model
@@ -113,28 +119,28 @@ class tcp_client(object):
         self._only_send(CMD_INFO, {})
         try:
             resp = self._connect.recv(1024)
-            resp_json = json.loads(resp.strip())            
+            resp_json = json.loads(resp.strip())
         except:
             _LOGGER.info('_device_info.recv.error')
             return None
-        
+
         if resp_json.get('msg') is None or type(resp_json['msg']) is not dict:
             _LOGGER.info('_device_info.recv.error1')
-            
+
             return None
-        
+
         if resp_json['msg'].get('did') is None:
             _LOGGER.info('_device_info.recv.error2')
-            
+
             return None
 
         self._device_id = resp_json['msg']['did']
-        
+
         if resp_json['msg'].get('pid') is None:
             _LOGGER.info('_device_info.recv.error3')
             return None
-        
-        self._pid = resp_json['msg']['pid']        
+
+        self._pid = resp_json['msg']['pid']
         pid_list = get_pid_list()
 
         for item in pid_list:
@@ -146,18 +152,18 @@ class tcp_client(object):
                     self._device_model_name = item1['n']
                     self._dpid = item1['dpid']
                     break
-            
+
             if match:
-                self._device_type_code = item['c']                
+                self._device_type_code = item['c']
                 break
-        
+
         # _LOGGER.info(pid_list)
         _LOGGER.info(self._device_id)
         _LOGGER.info(self._device_type_code)
         _LOGGER.info(self._pid)
         _LOGGER.info(self._device_model_name)
         _LOGGER.info(self._icon)
-    
+
     def _get_package(self, cmd: int, payload: dict) -> bytes:
         """
         package message
@@ -194,11 +200,11 @@ class tcp_client(object):
             }
         else:
             raise Exception('CMD is not valid')
-        
+
         payload_str = json.dumps(message, separators=(',', ':',))
         _LOGGER.info(f'_package={payload_str}')
         return bytes(payload_str + "\r\n", encoding='utf8')
-    
+
     def _send_receiver(self, cmd: int, payload: dict) -> Union[dict, Any]:
         """
         send & receiver
@@ -233,7 +239,7 @@ class tcp_client(object):
             _LOGGER.info(f'_only_send.recv.error: {e}')
             self._reconnect()  # Reconnect on exception
             return {}
-    
+
     def _only_send(self, cmd: int, payload: dict) -> None:
         """
         send but not receiver
@@ -242,7 +248,7 @@ class tcp_client(object):
         :return:
         """
         self._connect.send(self._get_package(cmd, payload))
-    
+
     def control(self, payload: dict) -> bool:
         """
         control use dpid
@@ -251,7 +257,7 @@ class tcp_client(object):
         """
         self._only_send(CMD_SET, payload)
         return True
-    
+
     def query(self) -> dict:
         """
         query device state
